@@ -1,0 +1,9 @@
+[package]
+name = "reminder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+embed = {version = "0.1.0", path = "embed"}
+rodio = "0.21.1"
