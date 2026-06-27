@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 embed = {version = "0.1.0", path = "embed"}
+nix = { version = "0.31.3", features = ["process"] }
 rodio = "0.21.1"
