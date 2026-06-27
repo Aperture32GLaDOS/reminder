@@ -61,16 +61,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match unsafe{fork()} {
         Ok(ForkResult::Parent{..}) => {},
         Ok(ForkResult::Child) => {
-            let mut stream_handle = rodio::OutputStreamBuilder::open_default_stream()
+            let mut stream_handle = rodio::DeviceSinkBuilder::open_default_sink()
                 .expect("open default audio stream");
             stream_handle.log_on_drop(false);
-            let sink = rodio::Sink::connect_new(&stream_handle.mixer());
+            let player = rodio::Player::connect_new(&stream_handle.mixer());
             let source = Decoder::try_from(std::io::Cursor::new(&alarm))?;
             while Instant::now() < target_time {
                 sleep(Duration::from_secs(1));
             }
-            sink.append(source);
-            sink.sleep_until_end();
+            player.append(source);
+            player.sleep_until_end();
         },
         Err(_) => {}
     }
