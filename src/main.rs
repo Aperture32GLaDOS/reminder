@@ -13,6 +13,9 @@ embed_file!{"./alarm.mp3", alarm}
 struct Args {
     #[command(subcommand)]
     command: Commands,
+    #[arg(short, long)]
+    /// Specifies that the program should not run as a daemon
+    no_daemon: bool
 }
 
 #[derive(Subcommand)]
@@ -29,10 +32,23 @@ enum Commands {
     }
 }
 
+fn wait_and_play(target_time: Instant) -> Result<(), Box<dyn std::error::Error>> {
+    let mut stream_handle = rodio::DeviceSinkBuilder::open_default_sink()
+        .expect("open default audio stream");
+    stream_handle.log_on_drop(false);
+    let player = rodio::Player::connect_new(&stream_handle.mixer());
+    let source = Decoder::try_from(std::io::Cursor::new(&alarm))?;
+    while Instant::now() < target_time {
+        sleep(Duration::from_secs(1));
+    }
+    player.append(source);
+    player.sleep_until_end();
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let target_time: Instant;
-    
     match args.command {
         Commands::FromNow { to_wait: x } => {
             let mut target = Instant::now();
@@ -58,21 +74,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             target_time = target;
         }
     }
-    match unsafe{fork()} {
-        Ok(ForkResult::Parent{..}) => {},
-        Ok(ForkResult::Child) => {
-            let mut stream_handle = rodio::DeviceSinkBuilder::open_default_sink()
-                .expect("open default audio stream");
-            stream_handle.log_on_drop(false);
-            let player = rodio::Player::connect_new(&stream_handle.mixer());
-            let source = Decoder::try_from(std::io::Cursor::new(&alarm))?;
-            while Instant::now() < target_time {
-                sleep(Duration::from_secs(1));
-            }
-            player.append(source);
-            player.sleep_until_end();
-        },
-        Err(_) => {}
+    if !args.no_daemon {
+        match unsafe{fork()} {
+            Ok(ForkResult::Parent{..}) => {},
+            Ok(ForkResult::Child) => {
+                wait_and_play(target_time)?;
+            },
+            Err(_) => {}
+        }
+    }
+    else {
+        wait_and_play(target_time)?;
     }
     Ok(())
 }
