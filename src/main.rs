@@ -1,11 +1,10 @@
-use std::{num::ParseIntError, thread::sleep, time::{Duration, Instant, SystemTime, UNIX_EPOCH}};
+use std::{num::ParseIntError, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}};
 use clap::{Parser, Subcommand};
-use embed::embed_file;
 use rodio::{Decoder};
 use nix::unistd::{fork, ForkResult};
 
 // Embed the alarm audio into the binary
-embed_file!{"./alarm.mp3", alarm}
+const ALARM: &[u8] = include_bytes!("./alarm.mp3");
 
 
 #[derive(Parser)]
@@ -37,7 +36,7 @@ fn wait_and_play(time_to_wait: Duration) -> Result<(), Box<dyn std::error::Error
         .expect("open default audio stream");
     stream_handle.log_on_drop(false);
     let player = rodio::Player::connect_new(&stream_handle.mixer());
-    let source = Decoder::try_from(std::io::Cursor::new(&alarm))?;
+    let source = Decoder::try_from(std::io::Cursor::new(&ALARM))?;
     sleep(time_to_wait);
     player.append(source);
     player.sleep_until_end();
