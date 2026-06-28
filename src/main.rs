@@ -38,9 +38,7 @@ fn wait_and_play(target_time: Instant) -> Result<(), Box<dyn std::error::Error>>
     stream_handle.log_on_drop(false);
     let player = rodio::Player::connect_new(&stream_handle.mixer());
     let source = Decoder::try_from(std::io::Cursor::new(&alarm))?;
-    while Instant::now() < target_time {
-        sleep(Duration::from_secs(1));
-    }
+    sleep(target_time - Instant::now());
     player.append(source);
     player.sleep_until_end();
     Ok(())
