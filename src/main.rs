@@ -80,7 +80,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(ForkResult::Child) => {
                 wait_and_play(target_time)?;
             },
-            Err(_) => {}
+            Err(y) => {
+                return Err(Box::new(y));
+            }
         }
     }
     else {
